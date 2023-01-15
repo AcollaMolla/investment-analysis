@@ -1,7 +1,28 @@
 # investment-analysis
 A collection of notebooks and source data that I use to analyze investment cases
 
-# Installing
+# Running the Jupyter Notebook
+Clone this repo and start a Jupyter Notebook session on your PC:
+
+```
+python -m notebook
+```
+
+Go to `localhost:8888` in your preffered Web Browser and navigate to the directory where you cloned this repo.
+Open the notebook.
+
+# Prerequisites
+This Jupyter Notebook requires that you have the following installed on your PC:
+
+- Python
+- Jupyter Lab
+- Jupyter Notebook
+
+And the following packages need to be installed in Python:
+- `pandas`
+- `matplotlib`
+- `scipy`
+
 ## Installing Python
 ### On Windows
 The easiest way to install Python on Windows is to do it via Microsoft Store:
@@ -45,3 +66,12 @@ If this is the first time you are running Jupyter Notebook you might have to set
 ```
 
 Copy any one of these tokens and goto `localhost:8888` in you Web Browser and select to log in to Jupyter Notebook using Token.
+
+## Installing required Python packages
+Open a PowerShell window and install the required Python packages needed to run the Notebook in this repo:
+
+```
+python -m pip install pandas
+python -m pip install matplotlib
+python -m pip install scipy
+```
