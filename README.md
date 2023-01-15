@@ -11,6 +11,13 @@ python -m notebook
 Go to `localhost:8888` in your preffered Web Browser and navigate to the directory where you cloned this repo.
 Open the notebook.
 
+## Mute changes in Git
+If you want to use Git and commit your own changes to the source code it is a good idea to tell Git to ignore each Notebook cell run as a change:
+
+```
+git config filter.strip-notebook-output.clean 'jupyter nbconvert --ClearOutputPreprocessor.enabled=True --to=notebook --stdin --stdout --log-level=ERROR'  
+```
+
 # Prerequisites
 This Jupyter Notebook requires that you have the following installed on your PC:
 
