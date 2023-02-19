@@ -50,13 +50,13 @@ def parse_yearly_results(soup) -> List[Dict]:
     html_table_tbody_rows = html_table_tbody.findAll('tr')
     
     for row in html_table_tbody_rows:
-        current_year = row.find('td').text
+        current_year = datetime(int(row.find('td').text), 1, 1)
         total = convert_yearly_return_to_numeric(row.find_all('td')[1].text)
         inflation_adjusted = convert_yearly_return_to_numeric(row.find_all('td')[2].text)
-        result.append({'year': current_year, 'inflation_adjusted': inflation_adjusted, 'total': total})
+        result.append({'date': current_year, 'inflation_adjusted': inflation_adjusted, 'total': total})
         
     #Example return value:
-    # [{"year": 1871, "inflation_adjusted": 8.61, "total": 10.11}, {"year": 1872, "inflation_adjusted": 2.34, "total": -1.34}...]
+    # [{"date": 1871-01-01, "inflation_adjusted": 8.61, "total": 10.11}, {"date": 1872-02-01, "inflation_adjusted": 2.34, "total": -1.34}...]
     
     return result
 
@@ -79,7 +79,7 @@ def fetch_portfolio_results(portfolio_name : str, granularity : str) -> pd.DataF
 
     if(granularity == 'y' or granularity != 'y'):
         df = pd.DataFrame(parse_yearly_results(soup))
-        df['year'] = pd.DatetimeIndex(df['year']).year
+        df['date'] = pd.DatetimeIndex(df['date'])
 
     return df
 
