@@ -31,6 +31,29 @@ def convert_yearly_return_to_numeric(percentage_gain_str : str) -> float:
     
     return percentage_gain_numeric
 
+def parse_monthly_results(soup) -> List[Dict]:
+    result = []
+
+    html_table = soup.find('table', id='yearReturns')
+    html_table_tbody = html_table.find('tbody')
+    html_table_tbody_rows = html_table_tbody.findAll('tr')
+    
+    for row in html_table_tbody_rows:
+        current_year = datetime(int(row.find('td').text), 1, 1)
+        for index, month in enumerate(row.find_all('td')):
+            if index < 3:
+                continue
+            
+        total = convert_yearly_return_to_numeric(row.find_all('td')[1].text)
+        inflation_adjusted = convert_yearly_return_to_numeric(row.find_all('td')[2].text)
+        result.append({'date': current_year, 'inflation_adjusted': inflation_adjusted, 'total': total})
+        
+    #Example return value:
+    # [{"date": 1871-01-01, "inflation_adjusted": 8.61, "total": 10.11}, {"date": 1872-02-01, "inflation_adjusted": 2.34, "total": -1.34}...]
+    
+    return result
+
+
 def parse_yearly_results(soup) -> List[Dict]:
     """
     Parse annual result
@@ -69,7 +92,7 @@ def fetch_portfolio_results(portfolio_name : str, granularity : str) -> pd.DataF
     granularity (str): What granularity to use. 'y' for annual and 'm' for monthly.
 
     Returns:
-    DataFrame: Pandas DataFrame with columns 'year', 'inflation_adjusted' and 'total'
+    DataFrame: Pandas DataFrame with columns 'date', 'return_inflation_adjusted' and 'return_total'
     """
     base_url = "http://www.lazyportfolioetf.com/allocation"
     url = f"{base_url}/{portfolio_name}/"
@@ -80,6 +103,13 @@ def fetch_portfolio_results(portfolio_name : str, granularity : str) -> pd.DataF
     if(granularity == 'y' or granularity != 'y'):
         df = pd.DataFrame(parse_yearly_results(soup))
         df['date'] = pd.DatetimeIndex(df['date'])
+
+    df = df.sort_values(by=['date'], ascending=True)
+
+    df['return_inflation_adjusted'] = df['inflation_adjusted'].shift(1)
+    df['return_total'] = df['total'].shift(1)
+
+    df = df[['date', 'return_inflation_adjusted', 'return_total']]
 
     return df
 
