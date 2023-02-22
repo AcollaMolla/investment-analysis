@@ -5,6 +5,28 @@ from os import path
 from datetime import datetime, timedelta
 from typing import List, Dict
 
+def calculate_monthly_inflation_rate(row : str) -> float:
+    """
+    Calculate an average monthly inflation rate based on the yearly inflation rate
+
+    Using the difference between total return and inflation adjusted return this function will take an average
+    and use it for approximating the monthly inflation rate for the current year.
+
+    Parameters:
+    row (List[str]): List of string values from the row in the HTML table for the current year
+
+    Returns:
+    float: Normalized float value representing the effect inflation will have on the monthly price change
+    """
+
+    yearly_inflation_adjusted_return = convert_yearly_return_to_numeric(row[2].text)
+    yearly_total_return = convert_yearly_return_to_numeric(row[1].text)
+    yearly_inflation_rate = yearly_total_return - yearly_inflation_adjusted_return
+
+    average_monthly_inflation_rate = yearly_inflation_rate/12
+
+    return float(average_monthly_inflation_rate)
+
 def convert_yearly_return_to_numeric(percentage_gain_str : str) -> float:
     """
     Convert string to float
@@ -47,6 +69,10 @@ def parse_monthly_results(soup) -> List[Dict]:
     html_table_tbody_rows = html_table_tbody.findAll('tr')
     
     for row in html_table_tbody_rows:
+
+        #Get the row data
+        average_monthly_inflation_rate = calculate_monthly_inflation_rate(row.find_all('td'))
+
         for index, column in enumerate(row.find_all('td')):
             if index < 3:
                 continue
@@ -54,6 +80,11 @@ def parse_monthly_results(soup) -> List[Dict]:
                 current_date = datetime(int(row.find('td').text), index - 2, 1)
                 return_total = convert_yearly_return_to_numeric(column.text)
                 return_inflation_adjusted = convert_yearly_return_to_numeric(column.text)
+
+                #Adjust the monthly return for the inflation rate
+                if return_inflation_adjusted is not None:
+                    return_inflation_adjusted = return_inflation_adjusted - average_monthly_inflation_rate
+                
                 result.append({'date': current_date, 'inflation_adjusted': return_inflation_adjusted, 'total': return_total})
         
     #Example return value:
@@ -120,7 +151,7 @@ def fetch_portfolio_results(portfolio_name : str, granularity : str) -> pd.DataF
     df['return_inflation_adjusted'] = df['inflation_adjusted'].shift(1)
     df['return_total'] = df['total'].shift(1)
 
-    #df = df[['date', 'return_inflation_adjusted', 'return_total']]
+    df = df[['date', 'return_inflation_adjusted', 'return_total']]
 
     return df
 
