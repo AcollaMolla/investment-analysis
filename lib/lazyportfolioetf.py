@@ -19,15 +19,23 @@ def convert_yearly_return_to_numeric(percentage_gain_str : str) -> float:
     """
     
     #Check if it is a positive return
-    if '+' in percentage_gain_str:
-        percentage_gain_str = percentage_gain_str.replace('+', '')
-        percentage_gain_numeric = float(percentage_gain_str)
-        percentage_gain_numeric = (100 + percentage_gain_numeric)/100
-        
-    else:
+    if '-' in percentage_gain_str:
         percentage_gain_str = percentage_gain_str.replace('-', '')
         percentage_gain_numeric = float(percentage_gain_str)
         percentage_gain_numeric = (100 - percentage_gain_numeric)/100
+
+    elif '+' in percentage_gain_str:
+        percentage_gain_str = percentage_gain_str.replace('+', '')
+        percentage_gain_numeric = float(percentage_gain_str)
+        percentage_gain_numeric = (100 + percentage_gain_numeric)/100
+
+    elif percentage_gain_str.strip() == '' or percentage_gain_str is None:
+        return None
+
+    else:
+        percentage_gain_str = percentage_gain_str.replace('+', '')
+        percentage_gain_numeric = float(percentage_gain_str)
+        percentage_gain_numeric = (100 + percentage_gain_numeric)/100
     
     return percentage_gain_numeric
 
@@ -39,14 +47,14 @@ def parse_monthly_results(soup) -> List[Dict]:
     html_table_tbody_rows = html_table_tbody.findAll('tr')
     
     for row in html_table_tbody_rows:
-        current_year = datetime(int(row.find('td').text), 1, 1)
-        for index, month in enumerate(row.find_all('td')):
+        for index, column in enumerate(row.find_all('td')):
             if index < 3:
                 continue
-            
-        total = convert_yearly_return_to_numeric(row.find_all('td')[1].text)
-        inflation_adjusted = convert_yearly_return_to_numeric(row.find_all('td')[2].text)
-        result.append({'date': current_year, 'inflation_adjusted': inflation_adjusted, 'total': total})
+            elif index >= 3 and index <= 14:
+                current_date = datetime(int(row.find('td').text), index - 2, 1)
+                return_total = convert_yearly_return_to_numeric(column.text)
+                return_inflation_adjusted = convert_yearly_return_to_numeric(column.text)
+                result.append({'date': current_date, 'inflation_adjusted': return_inflation_adjusted, 'total': return_total})
         
     #Example return value:
     # [{"date": 1871-01-01, "inflation_adjusted": 8.61, "total": 10.11}, {"date": 1872-02-01, "inflation_adjusted": 2.34, "total": -1.34}...]
@@ -100,8 +108,11 @@ def fetch_portfolio_results(portfolio_name : str, granularity : str) -> pd.DataF
     req = requests.get(url)
     soup = BeautifulSoup(req.text, "html.parser")
 
-    if(granularity == 'y' or granularity != 'y'):
+    if(granularity == 'y'):
         df = pd.DataFrame(parse_yearly_results(soup))
+        df['date'] = pd.DatetimeIndex(df['date'])
+    elif(granularity == 'm'):
+        df = pd.DataFrame(parse_monthly_results(soup))
         df['date'] = pd.DatetimeIndex(df['date'])
 
     df = df.sort_values(by=['date'], ascending=True)
@@ -109,7 +120,7 @@ def fetch_portfolio_results(portfolio_name : str, granularity : str) -> pd.DataF
     df['return_inflation_adjusted'] = df['inflation_adjusted'].shift(1)
     df['return_total'] = df['total'].shift(1)
 
-    df = df[['date', 'return_inflation_adjusted', 'return_total']]
+    #df = df[['date', 'return_inflation_adjusted', 'return_total']]
 
     return df
 
